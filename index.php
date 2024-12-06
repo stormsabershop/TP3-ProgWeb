@@ -1,5 +1,3 @@
 <?php
-session_start();
-//echo(session_id());
-print($_SESSION);
+include "html/index.html";
 ?>
