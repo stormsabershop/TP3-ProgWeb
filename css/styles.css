@@ -1,0 +1,12 @@
+body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+}
+
+h1#titre {
+    font-size: 2em;
+}
+
+p#message {
+    margin-bottom: 20px;
+}
+

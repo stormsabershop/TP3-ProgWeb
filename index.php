@@ -1,139 +1,118 @@
 <?php
-//TODO !!! le plus important regarder tout ce qu'il y a a faire pour le tp (y compris les petites subtilités) et voir que reste-t-il a faire et faire des TODOS de ce qu'il y a a faire
-//TODO regarder la video pour voir si les messages de validations sont bons
-if (isset($_POST['request_playing'])){
-    if($_POST['name'] != "" && $_POST['minimum'] != null && $_POST['maximum'] != null) {
-        if ($_POST['minimum'] >= 0) {
-            if ($_POST['minimum'] < $_POST['maximum']) {
-                session_start();
+session_start();
 
-                $name = $_POST['name'];
-                $minimum = $_POST['minimum'];
-                $maximum = $_POST['maximum'];
+define("ETAT_1", "page de bienvenue");
+define("ETAT_2", "page de jeu");
+define("ETAT_3", "page de fin");
 
-                $_SESSION['name'] = $name;
-                $_SESSION['minimum'] = $minimum;
-                $_SESSION['maximum'] = $maximum;
-                $_SESSION['coups'] = 0;
-                $_SESSION['random_number'] = rand($minimum, $maximum);
-                echo $_SESSION['random_number'];
-            } else{
-                echo "your maximum value must be more than minimum value";
-            }
-        } else{
-            echo "your minimum value must be 0 or higher";
-        }
-    } else{
-        echo "Please fill all the required fields.";
+if (empty($_SESSION)) {
+    $_SESSION["etat"] = ETAT_1;
+}
+
+function generateRandomNumber($min, $max) {
+    return rand($min, $max);
+}
+
+if (isset($_POST['request_playing'])) {
+    $name = trim($_POST['name']);
+    $minimum = intval($_POST['minimum']);
+    $maximum = intval($_POST['maximum']);
+
+    if ($name !== "" && $minimum >= 0 && $minimum < $maximum) {
+        $_SESSION["etat"] = ETAT_2;
+        $_SESSION['name'] = $name;
+        $_SESSION['minimum'] = $minimum;
+        $_SESSION['maximum'] = $maximum;
+        $_SESSION['coups'] = 0;
+        $_SESSION['random_number'] = generateRandomNumber($minimum, $maximum);
+        $_SESSION['values_tried'] = []; // Historique des valeurs essayées
+        $_SESSION['error'] = null;
     }
 }
-// TODO faire une verification pour savoir si la valeur donné est entre les deux valeurs (un peut dans le mem style que le request_playing au dessus)
-if (isset($_POST['transmit_value'])){
-    session_start();
-    echo $_SESSION['random_number'];
 
-    $valeur = $_POST['valeur'];
-    $_SESSION['valeur'] = $valeur;
+if (isset($_POST['transmit_value'])) {
+    $valeur = intval($_POST['valeur']);
 
+    if ($valeur < $_SESSION['minimum'] || $valeur > $_SESSION['maximum']) {
+        $_SESSION['error'] = "La valeur doit être entre {$_SESSION['minimum']} et {$_SESSION['maximum']}.";
+    } else {
+        $_SESSION['coups']++;
+        $_SESSION['values_tried'][] = $valeur;
+        $_SESSION['error'] = null;
 
-
-    $_SESSION['coups']++;
-
+        if ($valeur > $_SESSION['random_number']) {
+            $feedback = "haut!";
+        } elseif ($valeur < $_SESSION['random_number']) {
+            $feedback = "bas!";
+        } else {
+            $_SESSION["etat"] = ETAT_3;
+            $feedback = "Super tu as trouvé. c'est la valeur " . $valeur . ". Pas pire, mais tu as quand même essayé ces valeurs [" . implode(", ", $_SESSION['values_tried']) . "]";
+        }
+    }
 }
 
+if (isset($_GET['reset']) && $_GET['reset'] === 'true') {
+    session_destroy();
+    header("Location: index.php");
+    exit();
+}
 
-
-$session_started = (session_status() == PHP_SESSION_ACTIVE && isset($_SESSION['name']));
-echo "<script>let session_started = " . json_encode($session_started) . ";</script>";
-
-
-
-include "html/index.html";
-
-
-
+if (isset($_GET['restart_same_interval']) && $_GET['restart_same_interval'] === 'true') {
+    $_SESSION["etat"] = ETAT_2;
+    $_SESSION['coups'] = 0;
+    $_SESSION['random_number'] = generateRandomNumber($_SESSION['minimum'], $_SESSION['maximum']);
+    $_SESSION['values_tried'] = [];
+    $_SESSION['error'] = null;
+    header("Location: index.php");
+    exit();
+}
 ?>
-<script>
-    function start_intro(){
-        $('#titre').text("Devine la valeur :o)");
 
-        $('#message').text("Salut, voici un petit jeu où tu auras à deviner une valeur. Si tu veux jouer, inscris dans le formulaire suivant les informations demandés et transmets-les.");
-        $('<label>').attr("id", "msgName").text("Écris ton prénom ici: ").appendTo("#formulaire");
-        $('<input>').attr("type", 'text').attr("id", "name").attr("name", "name").appendTo("#formulaire");
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devine la valeur (jeu)</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
 
-        retour_ligne("#formulaire");
+<?php if ($_SESSION['etat'] == ETAT_1){ ?>
+    <h1 id="titre">Devine la valeur :o)</h1>
+    <p id="message">Salut, voici un petit jeu où tu auras à deviner une valeur. Si tu veux jouer, inscris dans le formulaire suivant les informations demandées et transmets-les.</p>
+    <form id="formulaire" action="index.php" method="POST">
+        <label for="name" id="msgName">Écris ton prénom ici: </label><input type="text" id="name" name="name">
+        <br>
+        <label for="minimum" id="msgValMin">Par la suite, donne-nous la valeur minimum: </label><input type="number" id="minimum" name="minimum">
+        <label for="maximum" id="msgValMax"> et la valeur maximum: </label><input type="number" id="maximum" name="maximum">
+        <label id="msgInfo"> que nous devrons respecter et entre lesquelles tu veux jouer.</label>
+        <p id="msgInfo">À l'intérieur de cet intervalle, nous allons choisir, au hasard, une valeur que tu auras à deviner !!!</p>
+        <input class="button-64" id="submit_btn" type="submit" value="Je veux jouer!" name="request_playing">
+    </form>
 
-        $('<label>').attr("id", "msgValMin").text("Par la suite, donne-nous la valeur minimum: ").appendTo("#formulaire");
-        $('<input>').attr("id", "minimum").attr("name", "minimum").attr("type", 'number').appendTo("#formulaire");
+<?php }elseif ($_SESSION['etat'] == ETAT_2){ ?>
+    <h1 id="titre">Devine la valeur <?php echo $_SESSION['name']; ?> </h1>
+    <?php if ($_SESSION['error']){ ?>
+        <p style="color: red;"><?php echo $_SESSION['error']; ?></p>
+    <?php }elseif ($_SESSION['coups'] == 0){ ?>
+        <p id="message">Une valeur a été choisie par le jeu, à toi de la trouver :o)</p>
+    <?php }else{ ?>
+        <p id="message">Après <?php echo $_SESSION['coups']; ?> coups, tu es trop <?php echo $feedback; ?></p>
+    <?php }?>
+    <form id="formulaire" action="index.php" method="POST">
+        <label id="entreValue">Entrez une valeur entre <?php echo $_SESSION['minimum']; ?> et <?php echo $_SESSION['maximum']; ?> :</label>
+        <input id="valeurEntre" name="valeur" type="number">
+        <br>
+        <input id="sendValue" type="submit" value="Tranmettre ma valeur!" name="transmit_value">
+    </form>
 
-        $('<label>').attr("id", "msgValMax").text(" et la valeur maximum: ").appendTo("#formulaire");
-        $('<input>').attr("id", "maximum").attr("name", "maximum").attr("type", 'number').appendTo("#formulaire");
-        $('<label>').attr("id", "msgInfo").text(" que nous devrons respecter et entre lesquelles tu veux jouer.").appendTo('#formulaire');
-        $('<p>').attr("id", "msgInfo").text("À l'intérieur de cet intervalle, nous allons choisir, au hasard, une valeur que tu auras à deviner !!!").appendTo('#formulaire');
-        $('<input>').attr("id", "submit_btn").attr("type", "submit").attr("value", "Je veux jouer!").attr("name", "request_playing").appendTo("#formulaire");
-    }
+<?php }elseif ($_SESSION['etat'] == ETAT_3){ ?>
+    <h1 id="titre">Devine la valeur <?php echo $_SESSION['name']; ?> </h1>
+    <p id="message"><?php echo $feedback; ?></p>
+    <a href="index.php?restart_same_interval=true">Recommencer avec la même intervalle</a>
+    <a href="index.php?reset=true">Recommencer en modifiant l'intervalle</a>
+<?php } ?>
 
-    function start_game(){
-        $('#titre').text("Devine la valeur <?php if(isset($_SESSION)){ echo $_SESSION['name']; }?>");
-
-        let valeur = parseInt('<?php if(isset($_SESSION)){ if (isset($_SESSION['valeur'])){ echo $_SESSION['valeur']; }}?>');
-
-        if (!isNaN(valeur) && '<?php if(isset($_SESSION)){ echo $_SESSION['coups']; }?>' !== "0"){
-            if (valeur > parseInt('<?php if(isset($_SESSION)){ echo $_SESSION['random_number']; }?>')){
-                ajoute_message("haut!");
-            } else if (valeur < parseInt('<?php if(isset($_SESSION)){ echo $_SESSION['random_number']; }?>')) {
-                ajoute_message("bas!");
-            } else {
-                //TODO ici a la fin du message entrer les valeurs essayés (par le même fait faire en sorte que elles se stock quand on joue)
-                //TODO en dessous du message suivant, ajouter deux liens: 1.lien pour recommencer avec la même intervalle  2.lien pour recommencer en modifiant l'intervalle
-                $('#message').text("Super tu as trouvé. c'est la valeur "+ valeur +". Pas pire, mais tu as quand même essayé ces valeurs [valeurs essayés]");
-            }
-        } else{
-            $('#message').text("Une valeur a été choisie par le jeu, à toi de la trouver :o)").css("color" , "green");
-            ajoute_reste_message();
-        }
-
-
-
-    }
-
-    function ajoute_message(indice){
-        if ('<?php if(isset($_SESSION)){ echo $_SESSION['coups']; }?>' === "1"){
-            $('#message').text("Après 1 coup, tu es trop " + indice).css("color" , "green");
-        } else {
-            $('#message').text("Après " + '<?php if(isset($_SESSION)){ echo $_SESSION['coups']; }?>' + " coups, tu es trop " + indice).css("color" , "green");
-        }
-        ajoute_reste_message();
-
-    }
-
-    function ajoute_reste_message() {
-        $('<label>').attr("id", "entreValue").text("Entrez une valeur entre <?php if(isset($_SESSION)){ echo $_SESSION['minimum']; }?> et <?php if(isset($_SESSION)){ echo $_SESSION['maximum']; }?>").appendTo('#formulaire');
-        $('<input>').attr("id", "valeurEntre").attr("name", "valeur").attr("type", "number").appendTo("#formulaire");
-        retour_ligne("#formulaire");
-        $('<input>').attr("id", "sendValue").attr("type", "submit").attr("value", "Tranmettre ma valeur!").attr("name", "transmit_value").appendTo("#formulaire");
-    }
-
-
-    $(document).ready(function () {
-        $('body').css("font-family", "'Segoe UI', Tahoma, sans-serif");
-        $('<h1>').attr("id", "titre").appendTo('body');
-        $('<p>').attr("id", "message").appendTo('body');
-        $('<form>').attr("id", "formulaire").attr("action", "index.php").attr("method", "POST").appendTo("body");
-        if (session_started === true){
-            start_game();
-        } else {
-            start_intro();
-        }
-
-
-
-
-    });
-
-
-
-    function retour_ligne(parent){
-        $('<br>').appendTo(parent);
-    }
-</script>
+</body>
+</html>
