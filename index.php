@@ -101,7 +101,7 @@ if (isset($_GET['restart_same_interval']) && $_GET['restart_same_interval'] === 
         <p id="message">Après <?php echo $_SESSION['coups']; ?> coups, tu es trop <?php echo $feedback; ?></p>
     <?php }?>
     <form id="formulaire" action="index.php" method="POST">
-        <label id="entreValue">Entrez une valeur entre <?php echo $_SESSION['minimum']; ?> et <?php echo $_SESSION['maximum']; ?> :</label>
+        <label id="entreValue" for="valeurEntre">Entrez une valeur entre <?php echo $_SESSION['minimum']; ?> et <?php echo $_SESSION['maximum']; ?> :</label>
         <input id="valeurEntre" name="valeur" type="number">
         <br>
         <input id="sendValue" type="submit" value="Tranmettre ma valeur!" name="transmit_value">
