@@ -5,33 +5,53 @@ define("ETAT_1", "page de bienvenue");
 define("ETAT_2", "page de jeu");
 define("ETAT_3", "page de fin");
 
+function write_to_file($message){
+    if (file_exists("log/trace_log.txt")){
+        $fichier = fopen("log/trace_log.txt", "a");
+        fwrite($fichier, date("d/m/Y H:i:s") . " - " . $message . " - " . session_id() . "\n");
+    }
+}
+
+
+$log = "";
+
 if (empty($_SESSION)) {
     $_SESSION["etat"] = ETAT_1;
+    write_to_file("Nouvelle session ");
 }
 
 function generateRandomNumber($min, $max) {
-    return rand($min, $max);
+    $val_random = rand($min, $max);
+    write_to_file("Choix d'une nouvelle valeur à deviner ($val_random)");
+    return $val_random;
 }
 
 if (isset($_POST['request_playing'])) {
     $name = trim($_POST['name']);
     $minimum = intval($_POST['minimum']);
     $maximum = intval($_POST['maximum']);
+    $log = "Formulaire prénom et valeurs ";
 
     if ($name !== "" && $minimum >= 0 && $minimum < $maximum) {
+        write_to_file($log);
         $_SESSION["etat"] = ETAT_2;
         $_SESSION['name'] = $name;
         $_SESSION['minimum'] = $minimum;
         $_SESSION['maximum'] = $maximum;
         $_SESSION['coups'] = 0;
         $_SESSION['random_number'] = generateRandomNumber($minimum, $maximum);
-        $_SESSION['values_tried'] = []; // Historique des valeurs essayées
+
+        $_SESSION['values_tried'] = [];
         $_SESSION['error'] = null;
+    } else {
+        $log .= "avec erreurs ";
+        write_to_file($log);
     }
 }
 
 if (isset($_POST['transmit_value'])) {
     $valeur = intval($_POST['valeur']);
+    write_to_file("Formulaire plus haut et plus bas");
 
     if ($valeur < $_SESSION['minimum'] || $valeur > $_SESSION['maximum']) {
         $_SESSION['error'] = "La valeur doit être entre {$_SESSION['minimum']} et {$_SESSION['maximum']}.";
@@ -75,6 +95,55 @@ if (isset($_GET['restart_same_interval']) && $_GET['restart_same_interval'] === 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Devine la valeur (jeu)</title>
     <link rel="stylesheet" href="css/styles.css">
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const form = document.getElementById("formulaire");
+            const nameInput = document.getElementById("name");
+            const minInput = document.getElementById("minimum");
+            const maxInput = document.getElementById("maximum");
+
+            if (form) {
+                form.addEventListener("submit", (event) => {
+                    // Réinitialiser les messages d'erreur
+                    const errorMsgs = document.querySelectorAll(".error-message");
+                    errorMsgs.forEach(msg => msg.remove());
+
+                    let isValid = true;
+
+                    // Validation du nom
+                    if (nameInput && nameInput.value.trim() === "") {
+                        isValid = false;
+                        alert("Le prénom est obligatoire.");
+                    }
+
+                    // Validation des valeurs minimum et maximum
+                    if (minInput && maxInput) {
+                        const minVal = parseInt(minInput.value, 10);
+                        const maxVal = parseInt(maxInput.value, 10);
+
+                        if (isNaN(minVal) || isNaN(maxVal)) {
+                            isValid = false;
+                            alert("vous devez entrer Les valeurs minimum et maximum.");
+                        } else if (minVal < 0) {
+                            isValid = false;
+                            alert("La valeur minimum doit être plus grand ou egal a 0.");
+                        } else if (minVal >= maxVal) {
+                            isValid = false;
+                            alert("La valeur maximum doit être supérieure à la valeur minimum.");
+                        }
+                    }
+
+                    // Empêcher l'envoi du formulaire si des erreurs existent
+                    /*
+                    if (!isValid) {
+                        event.preventDefault();
+                    }
+                     */
+                });
+            }
+        });
+    </script>
+
 </head>
 <body>
 
