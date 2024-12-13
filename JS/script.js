@@ -16,7 +16,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 isValid = false;
                 alert("Le prénom est obligatoire.")
             }
-
             if (minInput && maxInput) {
                 const minVal = parseInt(minInput.value, 10);
                 const maxVal = parseInt(maxInput.value, 10);
