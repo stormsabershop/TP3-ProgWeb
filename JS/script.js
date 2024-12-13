@@ -6,47 +6,43 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (form) {
         form.addEventListener("submit", (event) => {
-            // Réinitialiser les messages d'erreur
             const errorMsgs = document.querySelectorAll(".error-message");
             errorMsgs.forEach(msg => msg.remove());
 
             let isValid = true;
 
-            // Validation du nom
+
             if (nameInput && nameInput.value.trim() === "") {
                 isValid = false;
-                const errorMessage = document.createElement("p");
-                errorMessage.classList.add("error-message");
-                errorMessage.style.color = "red"; // Optional: Add custom styles
-                errorMessage.textContent = "Le prénom est obligatoire.";
-                document.body.prepend(errorMessage); // Insert the message after the input field
+                alert("Le prénom est obligatoire.")
             }
 
-            // Validation des valeurs minimum et maximum
             if (minInput && maxInput) {
                 const minVal = parseInt(minInput.value, 10);
                 const maxVal = parseInt(maxInput.value, 10);
 
-                if (isNaN(minVal) || isNaN(maxVal)) {
+                if (isNaN(minVal)) {
                     isValid = false;
-                    const errorMessage = document.createElement("p");
-                    document.body.prepend(errorMessage);// Insert the message after the minimum input field
-                } else if (minVal < 0) {
+                    alert("La valeur minimum est obligatoire");
+                } if (isNaN(maxVal)){
                     isValid = false;
-                    const errorMessage = document.createElement("p");
-                    errorMessage.classList.add("error-message");
-                    errorMessage.style.color = "red"; // Optional: Add custom styles
-                    errorMessage.textContent = "La valeur minimum doit être plus grande ou égale à 0.";
-                    document.body.prepend(errorMessage); // Insert the message after the minimum input field
-                } else if (minVal >= maxVal) {
+                    alert("La valeur maximum est obligatoire");
+                } if (minVal < 0) {
                     isValid = false;
-                    const errorMessage = document.createElement("p");
-                    errorMessage.classList.add("error-message");
-                    errorMessage.style.color = "red"; // Optional: Add custom styles
-                    errorMessage.textContent = "La valeur maximum doit être supérieure à la valeur minimum.";
-                    document.body.prepend(errorMessage); // Insert the message after the maximum input field
+                    alert("La valeur minimum doit être plus grande ou égale à 0. ");
+                } if (minVal >= maxVal) {
+                    isValid = false;
+                    alert("La valeur maximum doit être supérieure à la valeur minimum.");
+
                 }
             }
+
+
+            if (!isValid) {
+                event.preventDefault();
+                document.getElementById("dataField").value = "Formulaire prénom et valeurs avec erreurs";
+            }
+
         });
     }
 });
