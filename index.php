@@ -104,7 +104,7 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'true') {
 }
 
 if (isset($_GET['restart_same_interval']) && $_GET['restart_same_interval'] === 'true') {
-    write_to_file("Même session nouvel intervalle");
+    write_to_file("Même intervalle, nouvelle valeur");
     $_SESSION["etat"] = ETAT_2;
     $_SESSION['coups'] = 0;
     $_SESSION['random_number'] = generateRandomNumber($_SESSION['minimum'], $_SESSION['maximum']);
@@ -123,6 +123,7 @@ if (isset($_GET['restart_same_interval']) && $_GET['restart_same_interval'] === 
     <title>Devine la valeur (jeu)</title>
     <link rel="stylesheet" href="css/styles.css">
     <script src="JS/script.js"></script>
+    <script src="jquery/jquery-3.7.1.js"></script>
 </head>
 <body>
 
@@ -133,7 +134,7 @@ if (isset($_GET['restart_same_interval']) && $_GET['restart_same_interval'] === 
     <h1 id="titre">Devine la valeur :o)</h1>
     <p id="message">Salut, voici un petit jeu où tu auras à deviner une valeur. Si tu veux jouer, inscris dans le formulaire suivant les informations demandées et transmets-les.</p>
     <form id="formulaire" action="index.php" method="POST">
-        <input type="hidden" name="data" id="dataField">
+        <input type="hidden" name="data" id="dataField" value="<?php echo session_id();?>">
         <label for="name" id="msgName">Écris ton prénom ici: </label><input type="text" id="name" name="name">
         <br>
         <label for="minimum" id="msgValMin">Par la suite, donne-nous la valeur minimum: </label><input type="number" id="minimum" name="minimum">
@@ -144,7 +145,7 @@ if (isset($_GET['restart_same_interval']) && $_GET['restart_same_interval'] === 
     </form>
 
 <?php }elseif ($_SESSION['etat'] == ETAT_2){ ?>
-    <input type="hidden" name="data" id="dataField">
+    <input type="hidden" name="data" id="dataField" value="<?php echo session_id();?>">
     <h1 id="titre">Devine la valeur <?php echo $_SESSION['name']; ?> </h1>
     <?php if ($_SESSION['error']){ ?>
         <p style="color: red;"><?php echo $_SESSION['error']; ?></p>
@@ -162,7 +163,7 @@ if (isset($_GET['restart_same_interval']) && $_GET['restart_same_interval'] === 
     </form>
 
 <?php }elseif ($_SESSION['etat'] == ETAT_3){ ?>
-    <input type="hidden" name="data" id="dataField">
+    <input type="hidden" name="data" id="dataField" value="<?php echo session_id();?>">
     <h1 id="titre">Devine la valeur <?php echo $_SESSION['name']; ?> </h1>
     <p id="message"><?php echo $feedback; ?></p>
     <a href="index.php?restart_same_interval=true">Recommencer avec la même intervalle</a>
@@ -172,7 +173,6 @@ if (isset($_GET['restart_same_interval']) && $_GET['restart_same_interval'] === 
 
 </body>
 </html>
-
 
 
 

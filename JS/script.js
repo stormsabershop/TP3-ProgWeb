@@ -40,9 +40,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (!isValid) {
                 event.preventDefault();
-                document.getElementById("dataField").value = "Formulaire prénom et valeurs avec erreurs";
+                setTimeout(function() {
+                    let myValue = document.getElementById("dataField").value;
+                    let formData = new FormData();
+                    formData.append('data', myValue);
+
+                    fetch('execute.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                        .then(response => response.text())
+                }, 1);
             }
 
         });
     }
 });
+
+
