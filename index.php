@@ -6,10 +6,17 @@ define("ETAT_2", "page de jeu");
 define("ETAT_3", "page de fin");
 
 function write_to_file($message){
-    if (file_exists("log/trace_log.txt")){
-        $fichier = fopen("log/trace_log.txt", "a");
+
+    $fichier = fopen("log/trace_log.txt", "a");
+    if ($fichier) {
+        // Ecrit la trace dans le fichier avec la date, le message et l'ID de session
         fwrite($fichier, date("d/m/Y H:i:s") . " - " . $message . " - " . session_id() . "\n");
+        fclose($fichier);  // Ferme le fichier après l'écriture
+    } else {
+        // Gère les erreurs si le fichier ne peut pas être ouvert
+        error_log("Impossible d'ouvrir le fichier trace_log.txt pour l'écriture.");
     }
+
 }
 
 
@@ -31,6 +38,20 @@ if (isset($_POST['request_playing'])) {
     $minimum = intval($_POST['minimum']);
     $maximum = intval($_POST['maximum']);
     $log = "Formulaire prénom et valeurs ";
+    $_SESSION['error'] = null;
+    if ($name === "") {
+        $_SESSION['error'] .= "Le prénom est obligatoire. <br>";
+    } if ($minimum < 0) {
+        $_SESSION['error'] .= "La valeur minimum doit être plus grande ou égale à 0. <br>";
+    } if ($minimum >= $maximum && $minimum!=null) {
+        $_SESSION['error'] .= "La valeur maximum doit être supérieure à la valeur minimum. <br>";
+    }
+    if ($minimum == null){
+        $_SESSION['error'] .= "La valeur minimum est obligatoire <br>";
+    }
+    if ($maximum == null) {
+        $_SESSION['error'] .= "La valeur maximum est obligatoire<br>";
+    }
 
     if ($name !== "" && $minimum >= 0 && $minimum < $maximum) {
         write_to_file($log);
@@ -65,6 +86,7 @@ if (isset($_POST['transmit_value'])) {
         } elseif ($valeur < $_SESSION['random_number']) {
             $feedback = "bas!";
         } else {
+            write_to_file("Valeur trouvée par le joueur");
             $_SESSION["etat"] = ETAT_3;
             $feedback = "Super tu as trouvé. c'est la valeur " . $valeur . ". Pas pire, mais tu as quand même essayé ces valeurs [" . implode(", ", $_SESSION['values_tried']) . "]";
         }
@@ -78,6 +100,7 @@ if (isset($_GET['reset']) && $_GET['reset'] === 'true') {
 }
 
 if (isset($_GET['restart_same_interval']) && $_GET['restart_same_interval'] === 'true') {
+    write_to_file("Même session nouvel intervalle");
     $_SESSION["etat"] = ETAT_2;
     $_SESSION['coups'] = 0;
     $_SESSION['random_number'] = generateRandomNumber($_SESSION['minimum'], $_SESSION['maximum']);
@@ -95,59 +118,14 @@ if (isset($_GET['restart_same_interval']) && $_GET['restart_same_interval'] === 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Devine la valeur (jeu)</title>
     <link rel="stylesheet" href="css/styles.css">
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const form = document.getElementById("formulaire");
-            const nameInput = document.getElementById("name");
-            const minInput = document.getElementById("minimum");
-            const maxInput = document.getElementById("maximum");
-
-            if (form) {
-                form.addEventListener("submit", (event) => {
-                    // Réinitialiser les messages d'erreur
-                    const errorMsgs = document.querySelectorAll(".error-message");
-                    errorMsgs.forEach(msg => msg.remove());
-
-                    let isValid = true;
-
-                    // Validation du nom
-                    if (nameInput && nameInput.value.trim() === "") {
-                        isValid = false;
-                        alert("Le prénom est obligatoire.");
-                    }
-
-                    // Validation des valeurs minimum et maximum
-                    if (minInput && maxInput) {
-                        const minVal = parseInt(minInput.value, 10);
-                        const maxVal = parseInt(maxInput.value, 10);
-
-                        if (isNaN(minVal) || isNaN(maxVal)) {
-                            isValid = false;
-                            alert("vous devez entrer Les valeurs minimum et maximum.");
-                        } else if (minVal < 0) {
-                            isValid = false;
-                            alert("La valeur minimum doit être plus grand ou egal a 0.");
-                        } else if (minVal >= maxVal) {
-                            isValid = false;
-                            alert("La valeur maximum doit être supérieure à la valeur minimum.");
-                        }
-                    }
-
-                    // Empêcher l'envoi du formulaire si des erreurs existent
-                    /*
-                    if (!isValid) {
-                        event.preventDefault();
-                    }
-                     */
-                });
-            }
-        });
-    </script>
-
+    <script src="JS/script.js"></script>
 </head>
 <body>
 
 <?php if ($_SESSION['etat'] == ETAT_1){ ?>
+    <?php if (isset($_SESSION['error']) && $_SESSION['error']) { ?>
+        <p style="color: red;"><?php echo $_SESSION['error']; ?></p>
+    <?php } ?>
     <h1 id="titre">Devine la valeur :o)</h1>
     <p id="message">Salut, voici un petit jeu où tu auras à deviner une valeur. Si tu veux jouer, inscris dans le formulaire suivant les informations demandées et transmets-les.</p>
     <form id="formulaire" action="index.php" method="POST">
@@ -164,6 +142,7 @@ if (isset($_GET['restart_same_interval']) && $_GET['restart_same_interval'] === 
     <h1 id="titre">Devine la valeur <?php echo $_SESSION['name']; ?> </h1>
     <?php if ($_SESSION['error']){ ?>
         <p style="color: red;"><?php echo $_SESSION['error']; ?></p>
+
     <?php }elseif ($_SESSION['coups'] == 0){ ?>
         <p id="message">Une valeur a été choisie par le jeu, à toi de la trouver :o)</p>
     <?php }else{ ?>
@@ -180,6 +159,7 @@ if (isset($_GET['restart_same_interval']) && $_GET['restart_same_interval'] === 
     <h1 id="titre">Devine la valeur <?php echo $_SESSION['name']; ?> </h1>
     <p id="message"><?php echo $feedback; ?></p>
     <a href="index.php?restart_same_interval=true">Recommencer avec la même intervalle</a>
+    <br>
     <a href="index.php?reset=true">Recommencer en modifiant l'intervalle</a>
 <?php } ?>
 
